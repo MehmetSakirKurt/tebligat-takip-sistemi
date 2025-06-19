@@ -12,6 +12,7 @@ import time
 from database import Database
 from petition_dialog_windows import PetitionDialog
 from notification_manager_simple import NotificationManager
+from calendar_view import CalendarView
 
 class TebligatTakipApp:
     def __init__(self):
@@ -35,9 +36,29 @@ class TebligatTakipApp:
         
     def setup_ui(self):
         """Kullanıcı arayüzünü oluştur"""
+        # Ana notebook (sekmeli yapı)
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Liste sekmesi
+        self.list_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.list_frame, text="📋 Dilekçe Listesi")
+        
+        # Takvim sekmesi
+        self.calendar_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.calendar_frame, text="📅 Takvim Görünümü")
+        
+        # Liste sekmesi içeriği
+        self.setup_list_tab()
+        
+        # Takvim sekmesi içeriği
+        self.setup_calendar_tab()
+    
+    def setup_list_tab(self):
+        """Liste sekmesini oluştur"""
         # Ana frame
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        main_frame = ttk.Frame(self.list_frame)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Başlık
         title_label = ttk.Label(
@@ -85,7 +106,7 @@ class TebligatTakipApp:
         
         # Tablo
         columns = ("ID", "Karar No", "Dosya No", "Tebligat", "Yasal Süre", 
-                  "Avukata Sunum", "Son Teslim", "Kalan Gün", "İşlemler")
+                  "Avukata Sunum", "Son Teslim", "Kalan Gün")
         
         self.tree = ttk.Treeview(
             table_frame, 
@@ -103,18 +124,16 @@ class TebligatTakipApp:
         self.tree.heading("Avukata Sunum", text="Avukata Sunum")
         self.tree.heading("Son Teslim", text="Son Teslim")
         self.tree.heading("Kalan Gün", text="Kalan Gün")
-        self.tree.heading("İşlemler", text="İşlemler")
         
         # Kolon genişlikleri
         self.tree.column("ID", width=50, minwidth=50)
-        self.tree.column("Karar No", width=120, minwidth=100)
-        self.tree.column("Dosya No", width=120, minwidth=100)
-        self.tree.column("Tebligat", width=100, minwidth=100)
-        self.tree.column("Yasal Süre", width=80, minwidth=80)
-        self.tree.column("Avukata Sunum", width=100, minwidth=100)
-        self.tree.column("Son Teslim", width=100, minwidth=100)
-        self.tree.column("Kalan Gün", width=80, minwidth=80)
-        self.tree.column("İşlemler", width=150, minwidth=150)
+        self.tree.column("Karar No", width=140, minwidth=120)
+        self.tree.column("Dosya No", width=140, minwidth=120)
+        self.tree.column("Tebligat", width=120, minwidth=100)
+        self.tree.column("Yasal Süre", width=100, minwidth=80)
+        self.tree.column("Avukata Sunum", width=120, minwidth=100)
+        self.tree.column("Son Teslim", width=120, minwidth=100)
+        self.tree.column("Kalan Gün", width=100, minwidth=80)
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -124,8 +143,44 @@ class TebligatTakipApp:
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
+        # İşlem butonları paneli
+        action_frame = ttk.LabelFrame(main_frame, text="İşlemler")
+        action_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        # İşlem butonları
+        ttk.Button(
+            action_frame,
+            text="✏️ Düzenle",
+            command=self.edit_petition,
+            width=15
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        
+        ttk.Button(
+            action_frame,
+            text="📁 Arşivle",
+            command=self.archive_petition,
+            width=15
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        
+        ttk.Button(
+            action_frame,
+            text="🗑️ Sil",
+            command=self.delete_petition,
+            width=15
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        
+        ttk.Button(
+            action_frame,
+            text="📊 Detaylar",
+            command=self.show_details,
+            width=15
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        
         # Çift tıklama olayı
         self.tree.bind('<Double-1>', self.on_item_double_click)
+        
+        # Seçim değişikliği olayı
+        self.tree.bind('<<TreeviewSelect>>', self.on_selection_change)
         
         # Sağ tık menüsü
         self.context_menu = tk.Menu(self.root, tearoff=0)
@@ -145,6 +200,11 @@ class TebligatTakipApp:
             relief=tk.SUNKEN
         )
         status_bar.pack(fill=tk.X, pady=(10, 0))
+    
+    def setup_calendar_tab(self):
+        """Takvim sekmesini oluştur"""
+        self.calendar_view = CalendarView(self.calendar_frame, self.db)
+        self.calendar_view.pack(fill=tk.BOTH, expand=True)
     
     def load_petitions(self):
         """Dilekçeleri yükle ve tabloya ekle"""
@@ -178,8 +238,7 @@ class TebligatTakipApp:
                 yasal_sure,
                 self.format_date(sunum_tarihi),
                 self.format_date(teslim_tarihi),
-                kalan_gun,
-                "Düzenle | Arşivle | Sil"
+                kalan_gun
             ), tags=(tag,))
         
         # Renk kodlaması
@@ -189,6 +248,10 @@ class TebligatTakipApp:
         self.tree.tag_configure("normal", background="white", foreground="black")
         
         self.status_var.set(f"Toplam {len(petitions)} aktif dilekçe")
+        
+        # Takvimi de güncelle
+        if hasattr(self, 'calendar_view'):
+            self.calendar_view.refresh()
     
     def filter_petitions(self, *args):
         """Arama filtresini uygula"""
@@ -293,6 +356,104 @@ class TebligatTakipApp:
     def on_item_double_click(self, event):
         """Çift tıklama olayı"""
         self.edit_petition()
+    
+    def on_selection_change(self, event):
+        """Seçim değişikliği olayı"""
+        # Bu metot gelecekte ek özellikler için kullanılabilir
+        pass
+    
+    def show_details(self):
+        """Seçili dilekçenin detaylarını göster"""
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Uyarı", "Lütfen detaylarını görmek istediğiniz dilekçeyi seçin.")
+            return
+        
+        item = self.tree.item(selected[0])
+        petition_id = item['values'][0]
+        
+        petition_data = self.db.get_petition_by_id(petition_id)
+        if petition_data:
+            id_val, karar_no, dosya_no, tebligat_tarihi, yasal_sure, notlar, sunum_tarihi, teslim_tarihi, durum = petition_data
+            
+            # Detay penceresi
+            detail_window = tk.Toplevel(self.root)
+            detail_window.title(f"Dilekçe Detayları - {karar_no}")
+            detail_window.geometry("500x400")
+            detail_window.resizable(False, False)
+            detail_window.transient(self.root)
+            detail_window.grab_set()
+            
+            # İçerik
+            frame = ttk.Frame(detail_window)
+            frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+            
+            # Başlık
+            ttk.Label(frame, text=f"📋 {karar_no}", font=("Arial", 16, "bold")).pack(pady=(0, 20))
+            
+            # Bilgiler
+            info_text = tk.Text(frame, wrap=tk.WORD, height=15, font=("Arial", 10))
+            scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=info_text.yview)
+            info_text.configure(yscrollcommand=scrollbar.set)
+            
+            # İçerik hazırla
+            today = datetime.now().date()
+            teslim_dt = datetime.strptime(teslim_tarihi, "%Y-%m-%d").date()
+            kalan_gun = (teslim_dt - today).days
+            
+            durum_rengi = "🔴" if kalan_gun < 0 else "🟠" if kalan_gun <= 2 else "🟣" if kalan_gun <= 7 else "🟢"
+            
+            content = f"""
+{durum_rengi} GENEL BİLGİLER
+═══════════════════════════════════════
+
+📁 Karar Numarası: {karar_no}
+📂 Dosya Numarası: {dosya_no or 'Belirtilmemiş'}
+📅 Tebligat Tarihi: {self.format_date(tebligat_tarihi)}
+⏱️ Yasal Süre: {yasal_sure} gün
+📊 Durum: {durum.upper()}
+
+⏰ TARİH BİLGİLERİ
+═══════════════════════════════════════
+
+👔 Avukata Sunum: {self.format_date(sunum_tarihi)}
+⚠️ Son Teslim: {self.format_date(teslim_tarihi)}
+📊 Kalan Gün: {kalan_gun}
+
+📝 NOTLAR
+═══════════════════════════════════════
+
+{notlar if notlar else 'Not bulunmuyor.'}
+
+💡 DURUM DEĞERLENDİRMESİ
+═══════════════════════════════════════
+
+"""
+            
+            if kalan_gun < 0:
+                content += f"🚨 DİKKAT: Bu dilekçe {abs(kalan_gun)} gün gecikmiş!\nAcil işlem gerekli!"
+            elif kalan_gun == 0:
+                content += "⚠️ BUGÜN son teslim tarihi!"
+            elif kalan_gun <= 2:
+                content += f"🔥 Kritik: Sadece {kalan_gun} gün kaldı!"
+            elif kalan_gun <= 7:
+                content += f"⚡ Yaklaşan: {kalan_gun} gün kaldı."
+            else:
+                content += f"✅ Normal: {kalan_gun} gün var."
+            
+            info_text.insert(tk.END, content)
+            info_text.config(state=tk.DISABLED)
+            
+            info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Kapat butonu
+            ttk.Button(
+                frame,
+                text="Kapat",
+                command=detail_window.destroy,
+                width=15
+            ).pack(pady=(10, 0))
     
     def show_context_menu(self, event):
         """Sağ tık menüsünü göster"""
