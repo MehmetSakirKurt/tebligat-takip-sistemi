@@ -1,55 +1,19 @@
+"""
+Basit Windows sürümü - hiç locale kullanmaz
+"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
-import locale
-
-# Windows locale sorununu çöz - daha agresif yaklaşım
-
-# Locale ortam değişkenlerini temizle
-if 'LC_ALL' in os.environ:
-    del os.environ['LC_ALL']
-if 'LC_TIME' in os.environ:
-    del os.environ['LC_TIME']
-if 'LANG' in os.environ:
-    del os.environ['LANG']
-
-# Güvenli locale ayarla
-try:
-    locale.setlocale(locale.LC_ALL, 'C')
-except:
-    try:
-        locale.setlocale(locale.LC_ALL, '')
-    except:
-        pass
-
-# ttkbootstrap import'u locale ayarından sonra
-try:
-    import ttkbootstrap as ttk_bs
-    from ttkbootstrap.constants import *
-    BOOTSTRAP_AVAILABLE = True
-except ImportError:
-    print("ttkbootstrap bulunamadı, standart tkinter kullanılacak")
-    BOOTSTRAP_AVAILABLE = False
-
 from datetime import datetime, timedelta
 import threading
 import time
 from database import Database
 from petition_dialog_windows import PetitionDialog
-
-# Notification import - Windows için farklı yaklaşım
-try:
-    from notification_manager import NotificationManager
-except ImportError:
-    from notification_manager_simple import NotificationManager
+from notification_manager_simple import NotificationManager
 
 class TebligatTakipApp:
     def __init__(self):
-        if BOOTSTRAP_AVAILABLE:
-            self.root = ttk_bs.Window(themename="flatly")
-        else:
-            self.root = tk.Tk()
-            
+        self.root = tk.Tk()
         self.root.title("Tebligat Takip Sistemi")
         self.root.geometry("1200x700")
         self.root.minsize(1000, 600)
@@ -70,116 +34,63 @@ class TebligatTakipApp:
     def setup_ui(self):
         """Kullanıcı arayüzünü oluştur"""
         # Ana frame
-        if BOOTSTRAP_AVAILABLE:
-            main_frame = ttk_bs.Frame(self.root, padding=20)
-        else:
-            main_frame = ttk.Frame(self.root)
-            main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        if BOOTSTRAP_AVAILABLE:
-            main_frame.pack(fill=BOTH, expand=True)
+        main_frame = ttk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
         # Başlık
-        if BOOTSTRAP_AVAILABLE:
-            title_label = ttk_bs.Label(
-                main_frame, 
-                text="Tebligat Takip Sistemi", 
-                font=("Arial", 18, "bold"),
-                bootstyle=PRIMARY
-            )
-        else:
-            title_label = ttk.Label(
-                main_frame, 
-                text="Tebligat Takip Sistemi", 
-                font=("Arial", 18, "bold")
-            )
+        title_label = ttk.Label(
+            main_frame, 
+            text="Tebligat Takip Sistemi", 
+            font=("Arial", 18, "bold")
+        )
         title_label.pack(pady=(0, 20))
         
         # Buton çerçevesi
-        if BOOTSTRAP_AVAILABLE:
-            button_frame = ttk_bs.Frame(main_frame)
-        else:
-            button_frame = ttk.Frame(main_frame)
+        button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=(0, 20))
         
         # Yeni dilekçe ekle butonu
-        if BOOTSTRAP_AVAILABLE:
-            add_button = ttk_bs.Button(
-                button_frame,
-                text="➕ Yeni Dilekçe Ekle",
-                bootstyle=SUCCESS,
-                command=self.add_petition,
-                width=20
-            )
-        else:
-            add_button = ttk.Button(
-                button_frame,
-                text="+ Yeni Dilekçe Ekle",
-                command=self.add_petition,
-                width=20
-            )
+        add_button = ttk.Button(
+            button_frame,
+            text="+ Yeni Dilekçe Ekle",
+            command=self.add_petition,
+            width=20
+        )
         add_button.pack(side=tk.LEFT, padx=(0, 10))
         
         # Yenile butonu
-        if BOOTSTRAP_AVAILABLE:
-            refresh_button = ttk_bs.Button(
-                button_frame,
-                text="🔄 Yenile",
-                bootstyle=INFO,
-                command=self.load_petitions,
-                width=15
-            )
-        else:
-            refresh_button = ttk.Button(
-                button_frame,
-                text="Yenile",
-                command=self.load_petitions,
-                width=15
-            )
+        refresh_button = ttk.Button(
+            button_frame,
+            text="Yenile",
+            command=self.load_petitions,
+            width=15
+        )
         refresh_button.pack(side=tk.LEFT, padx=(0, 10))
         
         # Arama kutusu
-        if BOOTSTRAP_AVAILABLE:
-            search_frame = ttk_bs.Frame(button_frame)
-        else:
-            search_frame = ttk.Frame(button_frame)
+        search_frame = ttk.Frame(button_frame)
         search_frame.pack(side=tk.RIGHT)
         
         ttk.Label(search_frame, text="Arama:").pack(side=tk.LEFT, padx=(0, 5))
         self.search_var = tk.StringVar()
         self.search_var.trace('w', self.filter_petitions)
-        if BOOTSTRAP_AVAILABLE:
-            search_entry = ttk_bs.Entry(search_frame, textvariable=self.search_var, width=20)
-        else:
-            search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=20)
+        search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=20)
         search_entry.pack(side=tk.LEFT)
         
         # Tablo çerçevesi
-        if BOOTSTRAP_AVAILABLE:
-            table_frame = ttk_bs.Frame(main_frame)
-        else:
-            table_frame = ttk.Frame(main_frame)
+        table_frame = ttk.Frame(main_frame)
         table_frame.pack(fill=tk.BOTH, expand=True)
         
         # Tablo
         columns = ("ID", "Karar No", "Dosya No", "Tebligat", "Yasal Süre", 
                   "Avukata Sunum", "Son Teslim", "Kalan Gün", "İşlemler")
         
-        if BOOTSTRAP_AVAILABLE:
-            self.tree = ttk_bs.Treeview(
-                table_frame, 
-                columns=columns, 
-                show='headings',
-                height=15,
-                bootstyle=INFO
-            )
-        else:
-            self.tree = ttk.Treeview(
-                table_frame, 
-                columns=columns, 
-                show='headings',
-                height=15
-            )
+        self.tree = ttk.Treeview(
+            table_frame, 
+            columns=columns, 
+            show='headings',
+            height=15
+        )
         
         # Kolon başlıkları
         self.tree.heading("ID", text="ID")
@@ -204,10 +115,7 @@ class TebligatTakipApp:
         self.tree.column("İşlemler", width=150, minwidth=150)
         
         # Scrollbar
-        if BOOTSTRAP_AVAILABLE:
-            scrollbar = ttk_bs.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
-        else:
-            scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
         
         # Tablo ve scrollbar yerleştirme
@@ -229,19 +137,11 @@ class TebligatTakipApp:
         # Durum çubuğu
         self.status_var = tk.StringVar()
         self.status_var.set("Hazır")
-        if BOOTSTRAP_AVAILABLE:
-            status_bar = ttk_bs.Label(
-                main_frame, 
-                textvariable=self.status_var,
-                bootstyle=SECONDARY,
-                relief=tk.SUNKEN
-            )
-        else:
-            status_bar = ttk.Label(
-                main_frame, 
-                textvariable=self.status_var,
-                relief=tk.SUNKEN
-            )
+        status_bar = ttk.Label(
+            main_frame, 
+            textvariable=self.status_var,
+            relief=tk.SUNKEN
+        )
         status_bar.pack(fill=tk.X, pady=(10, 0))
     
     def load_petitions(self):
@@ -403,7 +303,10 @@ class TebligatTakipApp:
         """Bildirim zamanlayıcısını başlat"""
         def check_notifications():
             while True:
-                self.notification_manager.check_and_send_notifications()
+                try:
+                    self.notification_manager.check_and_send_notifications()
+                except Exception as e:
+                    print(f"Bildirim hatası: {e}")
                 time.sleep(3600)  # Her saat kontrol et
         
         notification_thread = threading.Thread(target=check_notifications, daemon=True)
@@ -414,6 +317,7 @@ class TebligatTakipApp:
         self.root.mainloop()
 
 def main():
+    print("Basit Windows sürümü başlatılıyor...")
     app = TebligatTakipApp()
     app.run()
 

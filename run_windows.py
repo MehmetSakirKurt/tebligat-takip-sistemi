@@ -53,8 +53,19 @@ def check_dependencies():
 def run_app():
     """Uygulamayı çalıştır"""
     try:
+        # Locale sorununu çöz
+        import locale
+        try:
+            locale.setlocale(locale.LC_ALL, 'C')
+            print("✅ Locale ayarlandı")
+        except:
+            print("⚠️  Locale ayarlanamadı, devam ediliyor...")
+        
         # Windows'a uygun main dosyasını çalıştır
-        if os.path.exists('src/main_windows.py'):
+        if os.path.exists('src/main_simple.py'):
+            print("Basit Windows sürümü çalıştırılıyor...")
+            import src.main_simple as app
+        elif os.path.exists('src/main_windows.py'):
             print("Windows sürümü çalıştırılıyor...")
             import src.main_windows as app
         elif os.path.exists('src/main.py'):
