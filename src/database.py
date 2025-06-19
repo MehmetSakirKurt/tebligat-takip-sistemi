@@ -2,14 +2,21 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import os
+import sys
 from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
 class Database:
     def __init__(self, db_path: str = None):
         if db_path is None:
-            # Uygulama dizininde veritabanı dosyası oluştur
-            app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # EXE dosyası için özel yol ayarla
+            if getattr(sys, 'frozen', False):
+                # EXE olarak çalışıyorsa, EXE dosyasının bulunduğu dizini kullan
+                app_dir = os.path.dirname(sys.executable)
+            else:
+                # Normal Python dosyası olarak çalışıyorsa
+                app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            
             self.db_path = os.path.join(app_dir, "tebligat.db")
         else:
             self.db_path = db_path
