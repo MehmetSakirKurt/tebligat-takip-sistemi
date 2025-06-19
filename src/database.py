@@ -6,12 +6,18 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
 class Database:
-    def __init__(self, db_path: str = "tebligat.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            # Uygulama dizininde veritabanı dosyası oluştur
+            app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.db_path = os.path.join(app_dir, "tebligat.db")
+        else:
+            self.db_path = db_path
         self.init_database()
     
     def init_database(self):
         """Veritabanını başlat ve tabloları oluştur"""
+        print(f"Veritabanı dosyası: {self.db_path}")
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
