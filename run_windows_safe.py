@@ -36,8 +36,17 @@ def main():
         print("\\n🚀 Uygulama başlatılıyor...")
         print("-" * 30)
         
+        # Python path'ini ayarla
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        src_dir = os.path.join(current_dir, 'src')
+        if src_dir not in sys.path:
+            sys.path.insert(0, src_dir)
+        
+        print(f"📁 Çalışma dizini: {current_dir}")
+        print(f"📁 Kaynak dizini: {src_dir}")
+        
         # Basit sürümü çalıştır
-        from src.main_simple import main as app_main
+        from main_simple import main as app_main
         app_main()
         
         return 0

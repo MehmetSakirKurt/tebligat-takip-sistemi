@@ -1,11 +1,12 @@
 @echo off
-echo Tebligat Takip Sistemi - Güvenli Başlatma
+chcp 65001 >nul 2>&1
+echo Tebligat Takip Sistemi - Guvenli Baslatma
 echo ==========================================
 
 REM Dosya varlığını kontrol et
 if not exist "src\main_simple.py" (
-    echo HATA: src\main_simple.py dosyası bulunamadı!
-    echo Lütfen doğru klasörde olduğunuzdan emin olun.
+    echo HATA: src\main_simple.py dosyasi bulunamadi!
+    echo Lutfen dogru klasorde oldugunuzdan emin olun.
     pause
     exit /b 1
 )
@@ -19,7 +20,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Python bulundu. Uygulama başlatılıyor...
+echo Python bulundu. Uygulama baslatiliyor...
 echo.
 
 REM Güvenli scripti çalıştır
@@ -27,10 +28,10 @@ python run_windows_safe.py
 
 if errorlevel 1 (
     echo.
-    echo Bir hata oluştu!
+    echo Bir hata olustu!
     pause
 )
 
 echo.
-echo Uygulama kapandı.
+echo Uygulama kapandi.
 pause
